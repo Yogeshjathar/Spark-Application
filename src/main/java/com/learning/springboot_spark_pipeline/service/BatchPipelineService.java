@@ -5,7 +5,6 @@ import com.learning.springboot_spark_pipeline.repo.ProductRevenueRepository;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -24,20 +23,11 @@ public class BatchPipelineService {
         this.productRevenueRepository = productRevenueRepository;
     }
 
-    @Value("${spring.datasource.url}")
-    private String jdbcUrl;
-
-    @Value("${spring.datasource.username}")
-    private String jdbcUser;
-
-    @Value("${spring.datasource.password}")
-    private String jdbcPassword;
-
     public String runBatchPipeline() {
 
         // Read CSV file
         String path = "src/main/resources/inputData/sales_data.csv";
-        
+
         Dataset<Row> df = spark.read()
                 .option("header", "true")
                 .option("inferSchema", "true")
@@ -61,14 +51,20 @@ public class BatchPipelineService {
         System.out.println("TransAformed Result:");
         result.show();
 
-        result.write()
-                .mode("overwrite")           // or append
-                .format("jdbc")
-                .option("url", jdbcUrl)
-                .option("dbtable", "product_revenue")
-                .option("user", jdbcUser)
-                .option("password", jdbcPassword)
-                .save();
+        List<Row> rows = result.collectAsList();
+        List<ProductRevenue> list = new ArrayList<>();
+
+        for(Row r : rows){
+            ProductRevenue pr = new ProductRevenue();
+
+            pr.setProduct(r.getString(0));
+            pr.setTotalRevenue(((Number) r.get(1)).doubleValue());
+            pr.setAvgOrderValue(((Number) r.get(2)).doubleValue());
+
+            list.add(pr);
+        }
+
+        productRevenueRepository.saveAll(list);
 
         return "Data stored into the DB successfully !!!" ;
     }

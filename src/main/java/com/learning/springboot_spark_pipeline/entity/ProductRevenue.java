@@ -14,11 +14,12 @@ public class ProductRevenue {
 
     private String product;
     private Double totalRevenue;
-    private Double avgOrderValue;public Long getId() {
-        return id;
-    }
+    private Double avgOrderValue;
 
     // getter and setters
+    public Long getId() {
+        return id;
+    }
     public void setId(Long id) {
         this.id = id;
     }
