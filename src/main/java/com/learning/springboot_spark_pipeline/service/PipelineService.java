@@ -30,7 +30,6 @@ public class PipelineService {
                 .toDF("value");
 
         df.show(); // Debugging
-
         Row result = df.agg(sum("value").alias("total")).first();
 
         return result.getLong(0);

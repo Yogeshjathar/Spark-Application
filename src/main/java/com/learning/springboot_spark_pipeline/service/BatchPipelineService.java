@@ -1,9 +1,15 @@
 package com.learning.springboot_spark_pipeline.service;
 
+import com.learning.springboot_spark_pipeline.entity.ProductRevenue;
+import com.learning.springboot_spark_pipeline.repo.ProductRevenueRepository;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.apache.spark.sql.functions.*;
 
@@ -11,14 +17,25 @@ import static org.apache.spark.sql.functions.*;
 public class BatchPipelineService {
 
     private final SparkSession spark;
+    private final ProductRevenueRepository productRevenueRepository;
 
-    public BatchPipelineService(SparkSession spark) {
+    public BatchPipelineService(SparkSession spark, ProductRevenueRepository productRevenueRepository) {
         this.spark = spark;
+        this.productRevenueRepository = productRevenueRepository;
     }
+
+    @Value("${spring.datasource.url}")
+    private String jdbcUrl;
+
+    @Value("${spring.datasource.username}")
+    private String jdbcUser;
+
+    @Value("${spring.datasource.password}")
+    private String jdbcPassword;
 
     public String runBatchPipeline() {
 
-        // 1️⃣ Read CSV file
+        // Read CSV file
         String path = "src/main/resources/inputData/sales_data.csv";
         
         Dataset<Row> df = spark.read()
@@ -29,10 +46,10 @@ public class BatchPipelineService {
         System.out.println("Input Data:");
         df.show();
 
-        // 2️⃣ Clean — remove nulls
+        // Clean — remove nulls
         Dataset<Row> cleaned = df.na().drop();
 
-        // 3️⃣ Transformation
+        // Transformation
         Dataset<Row> result = cleaned
                 .withColumn("totalAmount", col("quantity").multiply(col("price")))
                 .groupBy("product")
@@ -44,15 +61,15 @@ public class BatchPipelineService {
         System.out.println("TransAformed Result:");
         result.show();
 
-        // 4️⃣ Write output to disk
-        String outputPath = "src/main/resources/outputData/batch_result";
-        
-        result.coalesce(1)   // write single file
-                .write()
-                .mode("overwrite")
-                .option("header", "true")
-                .csv(outputPath);
+        result.write()
+                .mode("overwrite")           // or append
+                .format("jdbc")
+                .option("url", jdbcUrl)
+                .option("dbtable", "product_revenue")
+                .option("user", jdbcUser)
+                .option("password", jdbcPassword)
+                .save();
 
-        return "Batch pipeline completed — Output written to: " + outputPath;
+        return "Data stored into the DB successfully !!!" ;
     }
 }

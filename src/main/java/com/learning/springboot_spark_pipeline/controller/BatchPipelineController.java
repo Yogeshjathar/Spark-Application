@@ -13,6 +13,7 @@ public class BatchPipelineController {
         this.pipelineService = pipelineService;
     }
 
+    // Trigger batch pipeline
     @GetMapping("/run-batch")
     public String runBatchPipeline() {
         return pipelineService.runBatchPipeline();
