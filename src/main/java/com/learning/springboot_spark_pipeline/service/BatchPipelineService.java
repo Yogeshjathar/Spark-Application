@@ -5,6 +5,8 @@ import com.learning.springboot_spark_pipeline.repo.ProductRevenueRepository;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,7 @@ import static org.apache.spark.sql.functions.*;
 @Service
 public class BatchPipelineService {
 
+    private static final Logger log = LoggerFactory.getLogger(BatchPipelineService.class);
     private final SparkSession spark;
     private final ProductRevenueRepository productRevenueRepository;
 
@@ -43,7 +46,7 @@ public class BatchPipelineService {
                 .option("inferSchema", "true")
                 .csv(path);
 
-        System.out.println("Input Data:");
+        log.info("Input Data:");
         df.show();
 
         // Clean — remove nulls
@@ -58,7 +61,7 @@ public class BatchPipelineService {
                         avg("totalAmount").alias("avgOrderValue")
                 );
 
-        System.out.println("TransAformed Result:");
+        log.info("TransAformed Result:");
         result.show();
 
         result.write()
