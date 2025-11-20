@@ -21,6 +21,9 @@ public class SparkConfig {
     @Bean(destroyMethod = "stop")
     public SparkSession sparkSession() {
 
+        System.setProperty("hadoop.home.dir", "C:\\hadoop");
+        System.setProperty("HADOOP_HOME", "C:\\hadoop");
+
         SparkConf conf = new SparkConf()
                 .setAppName("SpringBootSparkApp")
                 .setMaster("local[*]")
